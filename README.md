@@ -6,6 +6,6 @@ Used *CASIA Multi-Spectral Palmprint Database*: http://biometrics.idealtest.org/
 
 ### Packages
 	
-[OpenCvSharp4.Windows](https://github.com/shimat/opencvsharp)
-[ML.Net](https://github.com/dotnet/machinelearning)
-[XPlot.Plotly](https://github.com/fslaborg/XPlot)
+1. [OpenCvSharp4.Windows](https://github.com/shimat/opencvsharp)
+2. [ML.Net](https://github.com/dotnet/machinelearning)
+3. [XPlot.Plotly](https://github.com/fslaborg/XPlot)
