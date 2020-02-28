@@ -6,6 +6,6 @@ Used *CASIA Multi-Spectral Palmprint Database*: http://biometrics.idealtest.org/
 
 ### Packages
 	
-#r "nuget:OpenCvSharp4.Windows, 4.2.0.20200208"	
-~~~#r "nuget:Microsoft.ML,1.4.0"~~~
-~~~#r "nuget:XPlot.Plotly,3.0.1"~~~
+**#r "nuget:OpenCvSharp4.Windows, 4.2.0.20200208"**
+~~#r "nuget:Microsoft.ML,1.4.0"~~
+~~#r "nuget:XPlot.Plotly,3.0.1"~~
