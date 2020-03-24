@@ -1,9 +1,7 @@
 using OpenCvSharp;
 
-namespace Biometrics.Palm
-{
-    public class PalmModel
-    {
+namespace Biometrics.Palm {
+    public class PalmModel {
         public string Id { get; set; }
         public string Owner { get; set; }
         public string FileName { get; set; }
@@ -17,6 +15,6 @@ namespace Biometrics.Palm
 
         public Mat ROI { get; set; }
 
-        public Mat Model { get; set; } = new Mat();
+        public Mat Model { get; set; } = new Mat ();
     }
 }
