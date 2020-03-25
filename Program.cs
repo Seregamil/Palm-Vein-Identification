@@ -237,7 +237,7 @@ namespace Biometrics.Palm {
             totalROIExtractionTime.Stop ();
             Console.WriteLine ($"[{DateTime.Now}] Total apply filters time: {totalROIExtractionTime.Elapsed}");
 
-            //? User model
+            /*//? User model
             UsersList.ForEach (x => {
                 // Console.WriteLine($"User {x.Name}. Total pattents: {x.Patterns.Count}");
                 var patternSize = x.Patterns[0].Size ();
@@ -263,8 +263,7 @@ namespace Biometrics.Palm {
                 x.Model = result; // apply result
                 Cv2.ImWrite ($"{x.Directory}/pattern.jpg", x.Model);
                 Console.WriteLine ($"[{DateTime.Now}] Palm uni model for {x.Name} was created");
-            });
-            // 
+            });*/
         }
     }
 }
