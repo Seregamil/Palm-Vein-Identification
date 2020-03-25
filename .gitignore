@@ -1,4 +1,3 @@
-notebook.url
-sources/.vscode
-sources/bin/*
-sources/obj/*
+bin/
+obj/
+images/
