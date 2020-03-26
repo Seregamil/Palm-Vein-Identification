@@ -1,4 +1,4 @@
-#define SAVEALLRESULTS
+// #define SAVEALLRESULTS
 
 using System;
 using System.Collections.Generic;
@@ -17,6 +17,12 @@ namespace Biometrics.Palm {
         public static List<PalmModel> PalmsList = new List<PalmModel> ();
 
         static void Main (string[] args) {
+            if(!Directory.Exists(Settings.Images.Output))
+                Directory.CreateDirectory(Settings.Images.Output);
+            
+            if(!Directory.Exists(Settings.Images.Dump))
+                Directory.CreateDirectory(Settings.Images.Dump);
+
             var listOfImages = Directory.GetFiles (Settings.Images.Source, "*.jpg").ToList ();
 
             //!Uncomment next line for select images by freq
@@ -237,33 +243,8 @@ namespace Biometrics.Palm {
             totalROIExtractionTime.Stop ();
             Console.WriteLine ($"[{DateTime.Now}] Total apply filters time: {totalROIExtractionTime.Elapsed}");
 
-            /*//? User model
-            UsersList.ForEach (x => {
-                // Console.WriteLine($"User {x.Name}. Total pattents: {x.Patterns.Count}");
-                var patternSize = x.Patterns[0].Size ();
-                var result = new Mat (patternSize, MatType.CV_8UC1);
-
-                for (var oX = 0; oX != patternSize.Width; oX++) {
-                    for (var oY = 0; oY != patternSize.Height; oY++) {
-                        var score = 0;
-
-                        foreach (var palm in x.Patterns) { // 255 or 0
-                            var px = palm.Get<byte> (oX, oY);
-
-                            if (px == Settings.COLOR_WHITE) { // white
-                                if (++score >= Settings.ScoreForApply)
-                                    break;
-                            }
-                        }
-
-                        result.Set (oX, oY, score >= Settings.ScoreForApply ? Settings.COLOR_WHITE : Settings.COLOR_BLACK);
-                    }
-                }
-
-                x.Model = result; // apply result
-                Cv2.ImWrite ($"{x.Directory}/pattern.jpg", x.Model);
-                Console.WriteLine ($"[{DateTime.Now}] Palm uni model for {x.Name} was created");
-            });*/
+            //! Create dump with users and they patterns
+            Dump.Patterns.Create(Settings.Images.Dump, UsersList);
         }
     }
 }

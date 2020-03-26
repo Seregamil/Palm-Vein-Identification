@@ -7,13 +7,72 @@ namespace Biometrics.Palm {
     using OpenCvSharp;
 
     public static class Dump {
+        public static class Patterns {
+            public static void Create(string path, List<UserModel> listOfUsers) {
+                if(!Directory.Exists($"{path}/Users"))
+                    Directory.CreateDirectory($"{path}/Users");
+
+                Console.WriteLine($"[{DateTime.Now}] Creating dump with patterns");
+
+                listOfUsers.ForEach(x => {
+                    var totalPatterns = x.Patterns.Count;
+
+                    using (var fs = new FileStorage($"{path}/Users/{x.Name}.yaml", FileStorage.Mode.Write | FileStorage.Mode.FormatYaml))
+                    {
+                        fs.Write("Name", x.Name);
+                        fs.Write("Directory", x.Directory);
+                        fs.Write("PatternsCount", totalPatterns);
+
+                        var counter = -1;
+                        x.Patterns.ForEach(pattern => {
+                            fs.Write($"Pattern_{++counter}", pattern);
+                        });
+                    }
+                });
+
+                Console.WriteLine($"[{DateTime.Now}] Dump with patterns created! {path}");
+            }
+
+            public static List<UserModel> Load(string path) {
+                var listOfUsers = new List<UserModel>();
+                var listOfFiles = Directory.GetFiles($"{path}/Users/", "*.yaml");
+
+                foreach(var file in listOfFiles) {
+                    using (var fs = new FileStorage($"{path}/Users/{file}", FileStorage.Mode.Read))
+                    {
+                        var userModel = new UserModel() 
+                        { 
+                            Name = fs["Name"].ReadString(),
+                            Directory = fs["Directory"].ReadString()
+                        };
+
+                        var patternsCount = fs["patternsCount"].ReadInt();
+                        var patternsList = new List<Mat>();
+
+                        for(var i = 0; i != patternsCount; i++) {
+                            var pattern = fs[$"Pattern_{i}"].ReadMat();
+                            patternsList.Add(pattern);
+                        }
+                        
+                        userModel.Patterns = patternsList;
+                        listOfUsers.Add(userModel);
+                    }
+                }
+
+                return listOfUsers;
+            }
+        }
+
         public static class ROI {
             public static void Create (string path, List<PalmModel> listOfPalms) {
+                if (!Directory.Exists($"{path}/ROI"))
+                    Directory.CreateDirectory($"{path}/ROI");
+
                 Console.WriteLine ($"[{DateTime.Now}] Creating dump file with ROI images. ");
 
                 listOfPalms.ForEach (x => {
-                    OpenCvSharp.Extensions.BitmapConverter.ToBitmap (x.ROI);
-                    using (var fs = new FileStorage ($"{path}{x.FileName}.yaml", FileStorage.Mode.Write | FileStorage.Mode.FormatYaml)) {
+                    // OpenCvSharp.Extensions.BitmapConverter.ToBitmap (x.ROI);
+                    using (var fs = new FileStorage ($"{path}/ROI/{x.FileName}.yaml", FileStorage.Mode.Write | FileStorage.Mode.FormatYaml)) {
                         fs.Write ("Id", x.Id);
                         fs.Write ("Owner", x.Owner);
                         fs.Write ("FileName", x.FileName);
@@ -35,7 +94,7 @@ namespace Biometrics.Palm {
 
                 listOfImages.ForEach (x => {
                     x = x.Remove (0, x.LastIndexOf ('\\') + 1).Replace (".jpg", "");
-                    using (var fs = new FileStorage ($"{path}{x}.yaml", FileStorage.Mode.Read)) {
+                    using (var fs = new FileStorage ($"{path}/ROI/{x}.yaml", FileStorage.Mode.Read)) {
                         listOfPalms.Add (new PalmModel () {
                             Id = fs["Id"].ReadString (),
                                 Owner = fs["Owner"].ReadString (),
