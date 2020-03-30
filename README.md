@@ -3,7 +3,7 @@
 All work writed on **C#** with Jupyter Notebook *(.Net Interactive)*
 Used *CASIA Multi-Spectral Palmprint Database*: http://biometrics.idealtest.org/dbDetailForUser.do?id=6
 
-### Image processing time
+## Image processing time
 
 Total users: **200**
 Total palm collection: **1200**
@@ -20,7 +20,7 @@ Total palm collection: **1200**
 *[30.03.2020 15:05:12]* Creating dump with patterns  
 *[30.03.2020 15:05:21]* Dump with patterns created! images\output\bin\
 
-### Packages
+## Packages
 	
 1. [OpenCvSharp4.Windows](https://github.com/shimat/opencvsharp)
 2. [ML.Net](https://github.com/dotnet/machinelearning)
