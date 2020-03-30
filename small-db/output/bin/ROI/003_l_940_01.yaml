@@ -3,7 +3,7 @@
 Id: "01"
 Owner: "003_l_940"
 FileName: "003_l_940_01"
-Directory: "small-db\\output/003_l_940"
+Directory: "small-db\\output\\003_l_940"
 SourceImage: !!opencv-matrix
    rows: 576
    cols: 768

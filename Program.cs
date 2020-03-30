@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,8 @@ using System.Threading.Tasks;
 using MoreLinq;
 
 using OpenCvSharp;
+
+using CsvHelper;
 
 namespace Biometrics.Palm {
     public class Program {
@@ -26,7 +29,7 @@ namespace Biometrics.Palm {
             var listOfImages = Directory.GetFiles (Settings.Images.Source, "*.jpg").ToList ();
 
             //!Uncomment next line for select images by freq
-            //listOfImages = listOfImages.Where(x => x.Contains("940")).ToList();
+            listOfImages = listOfImages.Where(x => x.Contains("940")).ToList();
 
             //! Comment from this to dump loading for dump load, lol
             //? get list of all filenames without .jpg and generate cntr PalmsList
@@ -36,9 +39,9 @@ namespace Biometrics.Palm {
 
                 PalmsList.Add (new PalmModel () {
                     Id = x.Substring (x.Length - 2),
-                        Owner = owner,
-                        FileName = x,
-                        Directory = $"{Settings.Images.Output}/{owner}"
+                    Owner = owner,
+                    FileName = x,
+                    Directory = $@"{Settings.Images.Output}{owner}"
                 });
             });
 
@@ -49,8 +52,8 @@ namespace Biometrics.Palm {
 
                 UsersList.Add (new UserModel () {
                     Name = x.Owner,
-                        Patterns = new List<Mat> (),
-                        Directory = x.Directory
+                    Patterns = new List<Mat> (),
+                    Directory = x.Directory
                 });
 
                 if (Directory.Exists (x.Directory) && Directory.GetFiles (x.Directory).Length > 0) {
@@ -71,7 +74,7 @@ namespace Biometrics.Palm {
             var ROITask = Task.Factory.StartNew (() => {
                 PalmsList.ForEach (x => {
                     Task.Factory.StartNew (() => {
-                        var path = $"{Settings.Images.Source}/{x.FileName}.jpg";
+                        var path = $@"{Settings.Images.Source}\{x.FileName}.jpg";
                         x.SourceImage = Cv2.ImRead (path, ImreadModes.Color);
 
                         x.Height = x.SourceImage.Size ().Height;
@@ -83,7 +86,7 @@ namespace Biometrics.Palm {
 
                         // save for debug
 #if SAVEALLRESULTS
-                        Cv2.ImWrite ($"{x.Directory}/binary_{x.Id}.jpg", x.ThresholdImage);
+                        Cv2.ImWrite ($@"{x.Directory}\binary_{x.Id}.jpg", x.ThresholdImage);
 #endif
 
                         //! ROI extraction
@@ -135,8 +138,8 @@ namespace Biometrics.Palm {
                         Cv2.Rotate (x.ROI, x.ROI, RotateFlags.Rotate90Counterclockwise);
 
 #if SAVEALLRESULTS
-                        Cv2.ImWrite ($"{x.Directory}/ROIOnSource_{x.Id}.jpg", drawROIImage);
-                        Cv2.ImWrite ($"{x.Directory}/ROI_{x.Id}.jpg", x.ROI);
+                        Cv2.ImWrite ($@"{x.Directory}\ROIOnSource_{x.Id}.jpg", drawROIImage);
+                        Cv2.ImWrite ($@"{x.Directory}\ROI_{x.Id}.jpg", x.ROI);
 #endif
 
                     }, TaskCreationOptions.AttachedToParent | TaskCreationOptions.RunContinuationsAsynchronously);
@@ -169,7 +172,7 @@ namespace Biometrics.Palm {
                         OpenCvSharp.Cv2.MedianBlur (x.ROI, x.ROI, 5);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($"{x.Directory}/ROI_Median_{x.Id}.jpg", x.ROI);
+                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\ROI_Median_{x.Id}.jpg", x.ROI);
 #endif
 
                         // OpenCvSharp.Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
@@ -177,7 +180,7 @@ namespace Biometrics.Palm {
                         OpenCvSharp.Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.GRAY2BGR);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($"{x.Directory}/reduce_noise_{x.Id}.jpg", x.ROI);
+                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\reduce_noise_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Equalize hist
@@ -196,14 +199,14 @@ namespace Biometrics.Palm {
                         OpenCvSharp.Cv2.CvtColor (x.ROI, x.ROI, OpenCvSharp.ColorConversionCodes.YUV2BGR);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($"{x.Directory}/equalized_hist_{x.Id}.jpg", x.ROI);
+                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\equalized_hist_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Invert image
                         OpenCvSharp.Cv2.BitwiseNot (x.ROI, x.ROI);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($"{x.Directory}/inverted_{x.Id}.jpg", x.ROI);
+                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\inverted_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Erode image
@@ -211,7 +214,7 @@ namespace Biometrics.Palm {
                         OpenCvSharp.Cv2.Erode (x.ROI, x.ROI, element);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($"{x.Directory}/eroded_{x.Id}.jpg", x.ROI);
+                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\eroded_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Skeletonize
@@ -231,7 +234,7 @@ namespace Biometrics.Palm {
                         //! Threshold skeletonized image
                         var thr = skel.Threshold (0, 255, ThresholdTypes.Binary);
 
-                        OpenCvSharp.Cv2.ImWrite ($"{x.Directory}/thr_{x.Id}.jpg", thr);
+                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\thr_{x.Id}.jpg", thr);
 
                         var owner = UsersList.Find (u => u.Name == x.Owner);
                         owner.Patterns.Add (thr); // add thresholded image to user patterns
@@ -245,6 +248,9 @@ namespace Biometrics.Palm {
 
             //! Create dump with users and they patterns
             Dump.Patterns.Create(Settings.Images.Dump, UsersList);
+
+            //! Create CSV file
+            Dump.CSV.Create(Settings.Images.CSV, PalmsList);
         }
     }
 }
