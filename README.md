@@ -27,3 +27,4 @@ Total palm collection: **1200**
 3. [XPlot.Plotly](https://github.com/fslaborg/XPlot)
 4. [MoreLinq](https://morelinq.github.io/)
 5. [CSVHelper](https://joshclose.github.io/CsvHelper/)
+6. [TensorFlow](https://storage.googleapis.com/tensorflow/windows/gpu/tensorflow_gpu-2.1.0-cp37-cp37m-win_amd64.whl)
