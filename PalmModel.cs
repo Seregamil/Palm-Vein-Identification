@@ -4,6 +4,7 @@ namespace Biometrics.Palm {
     public class PalmModel {
         public string Id { get; set; }
         public string Owner { get; set; }
+        public char Type { get; set; }
         public string FileName { get; set; }
         public string Directory { get; set; }
         public Mat SourceImage { get; set; }

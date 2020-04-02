@@ -82,7 +82,9 @@ namespace Biometrics.Palm {
 
                         //! apply threshold
                         Cv2.CvtColor (x.SourceImage, x.SourceImage, ColorConversionCodes.BGR2GRAY);
-                        x.ThresholdImage = x.SourceImage.Threshold (0, 255, ThresholdTypes.Otsu);
+                        
+                        //                                          0, 255
+                        x.ThresholdImage = x.SourceImage.Threshold (5, 255, ThresholdTypes.Otsu);
 
                         // save for debug
 #if SAVEALLRESULTS
@@ -133,7 +135,7 @@ namespace Biometrics.Palm {
                         drawROIImage.Rectangle (rect, Scalar.White);
 
                         x.ROI = new Mat (x.SourceImage, rect)
-                            .Resize (new OpenCvSharp.Size (216, 216));
+                            .Resize (new Size (216, 216));
 
                         Cv2.Rotate (x.ROI, x.ROI, RotateFlags.Rotate90Counterclockwise);
 
@@ -169,52 +171,52 @@ namespace Biometrics.Palm {
                 PalmsList.ForEach (x => {
                     Task.Factory.StartNew (() => {
                         //! Reduce noise
-                        OpenCvSharp.Cv2.MedianBlur (x.ROI, x.ROI, 5);
+                        Cv2.MedianBlur (x.ROI, x.ROI, 5);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\ROI_Median_{x.Id}.jpg", x.ROI);
+                        Cv2.ImWrite ($@"{x.Directory}\ROI_Median_{x.Id}.jpg", x.ROI);
 #endif
 
-                        // OpenCvSharp.Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
-                        OpenCvSharp.Cv2.FastNlMeansDenoising (x.ROI, x.ROI);
-                        OpenCvSharp.Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.GRAY2BGR);
+                        // Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
+                        Cv2.FastNlMeansDenoising (x.ROI, x.ROI);
+                        Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.GRAY2BGR);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\reduce_noise_{x.Id}.jpg", x.ROI);
+                        Cv2.ImWrite ($@"{x.Directory}\reduce_noise_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Equalize hist
-                        var element = OpenCvSharp.Cv2.GetStructuringElement (MorphShapes.Cross, Settings.ElementSize); // new Mat(7, 7, MatType.CV_8U);
-                        OpenCvSharp.Cv2.MorphologyEx (x.ROI, x.ROI, OpenCvSharp.MorphTypes.Open, element);
-                        OpenCvSharp.Cv2.CvtColor (x.ROI, x.ROI, OpenCvSharp.ColorConversionCodes.BGR2YUV);
+                        var element = Cv2.GetStructuringElement (MorphShapes.Cross, Settings.ElementSize); // new Mat(7, 7, MatType.CV_8U);
+                        Cv2.MorphologyEx (x.ROI, x.ROI, MorphTypes.Open, element);
+                        Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.BGR2YUV);
 
-                        // OpenCvSharp.Cv2.EqualizeHist(x.ROI, x.ROI);
-                        var RGB = OpenCvSharp.Cv2.Split (x.ROI);
+                        // Cv2.EqualizeHist(x.ROI, x.ROI);
+                        var RGB = Cv2.Split (x.ROI);
 
                         RGB[0] = RGB[0].EqualizeHist ();
                         RGB[1] = RGB[1].EqualizeHist ();
                         RGB[2] = RGB[2].EqualizeHist ();
 
-                        OpenCvSharp.Cv2.Merge (RGB, x.ROI);
-                        OpenCvSharp.Cv2.CvtColor (x.ROI, x.ROI, OpenCvSharp.ColorConversionCodes.YUV2BGR);
+                        Cv2.Merge (RGB, x.ROI);
+                        Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.YUV2BGR);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\equalized_hist_{x.Id}.jpg", x.ROI);
+                        Cv2.ImWrite ($@"{x.Directory}\equalized_hist_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Invert image
-                        OpenCvSharp.Cv2.BitwiseNot (x.ROI, x.ROI);
+                        Cv2.BitwiseNot (x.ROI, x.ROI);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\inverted_{x.Id}.jpg", x.ROI);
+                        Cv2.ImWrite ($@"{x.Directory}\inverted_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Erode image
-                        OpenCvSharp.Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
-                        OpenCvSharp.Cv2.Erode (x.ROI, x.ROI, element);
+                        Cv2.CvtColor (x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
+                        Cv2.Erode (x.ROI, x.ROI, element);
 
 #if SAVEALLRESULTS
-                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\eroded_{x.Id}.jpg", x.ROI);
+                        Cv2.ImWrite ($@"{x.Directory}\eroded_{x.Id}.jpg", x.ROI);
 #endif
 
                         //! Skeletonize
@@ -223,18 +225,33 @@ namespace Biometrics.Palm {
                         var eroded = new Mat ();
 
                         do {
-                            OpenCvSharp.Cv2.MorphologyEx (x.ROI, eroded, MorphTypes.Erode, element);
-                            OpenCvSharp.Cv2.MorphologyEx (eroded, temp, MorphTypes.Dilate, element);
-                            OpenCvSharp.Cv2.Subtract (x.ROI, temp, temp);
-                            OpenCvSharp.Cv2.BitwiseOr (skel, temp, skel);
+                            Cv2.MorphologyEx (x.ROI, eroded, MorphTypes.Erode, element);
+                            Cv2.MorphologyEx (eroded, temp, MorphTypes.Dilate, element);
+                            Cv2.Subtract (x.ROI, temp, temp);
+                            Cv2.BitwiseOr (skel, temp, skel);
                             eroded.CopyTo (x.ROI);
 
-                        } while (OpenCvSharp.Cv2.CountNonZero (x.ROI) != 0);
+                        } while (Cv2.CountNonZero (x.ROI) != 0);
 
                         //! Threshold skeletonized image
                         var thr = skel.Threshold (0, 255, ThresholdTypes.Binary);
 
-                        OpenCvSharp.Cv2.ImWrite ($@"{x.Directory}\thr_{x.Id}.jpg", thr);
+                        //! Remove contours 
+                        thr.Line(new Point(0, 0), new Point(0, thr.Height), Scalar.Black, 2); // rm left contour
+                        thr.Line(new Point(0, 0), new Point(thr.Width, 0), Scalar.Black, 2); // rm top contour
+
+                        thr.Line(new Point(thr.Width, thr.Height), new Point(thr.Width, 0), Scalar.Black, 2); // rm right contour
+                        thr.Line(new Point(thr.Width, thr.Height), new Point(0, thr.Height), Scalar.Black, 2); // rm bot contour
+
+                        //! Normalize contours
+                        element = Cv2.GetStructuringElement(MorphShapes.Ellipse, new Size(6, 6));
+
+                        Cv2.Dilate(thr, thr, element);
+                        Cv2.Erode(thr, thr, element);
+
+                        Cv2.MorphologyEx(thr, thr, MorphTypes.Gradient, element);
+
+                        Cv2.ImWrite ($@"{x.Directory}\{x.Id}.jpg", thr);
 
                         var owner = UsersList.Find (u => u.Name == x.Owner);
                         owner.Patterns.Add (thr); // add thresholded image to user patterns

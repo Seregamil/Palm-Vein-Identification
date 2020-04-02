@@ -10,6 +10,7 @@ namespace Biometrics.Palm {
             public const string CSV = @"images\data.csv";
         }
 
-        public static readonly OpenCvSharp.Size ElementSize = new OpenCvSharp.Size (3, 3);
+        // public static readonly OpenCvSharp.Size ElementSize = new OpenCvSharp.Size (3, 3);
+        public static readonly OpenCvSharp.Size ElementSize = new OpenCvSharp.Size (6, 6);
     }
 }
