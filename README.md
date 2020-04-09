@@ -3,6 +3,11 @@
 All work writed on **C#** with Jupyter Notebook *(.Net Interactive)*
 Used *CASIA Multi-Spectral Palmprint Database*: http://biometrics.idealtest.org/dbDetailForUser.do?id=6
 
+Sample structure of model u can see on this image  
+![structure](images/model_structure.jpg)
+
+Or open 'model_structure_sample' folder
+
 ## Image processing time
 
 Total users: **200**
