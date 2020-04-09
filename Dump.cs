@@ -9,39 +9,11 @@ namespace Biometrics.Palm {
     using OpenCvSharp;
 
     public static class Dump {
-        public static class CSV {
-            public static void Create(string path, List<PalmModel> listOfPalms)
-            {
-                if(File.Exists(path))
-                    File.Delete(path);
-
-                var CVSModelList = new List<CSVModel>();
-                listOfPalms.ForEach(x =>
-                {
-                    var model = new CSVModel()
-                    {
-                        Name = x.Owner,
-                        Path = $@"{x.Directory}\thr_{x.Id}.jpg"
-                    };
-
-                    CVSModelList.Add(model);
-                });
-
-                using (var writer = new StreamWriter(path))
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-                {
-                    csv.WriteRecords(CVSModelList);
-                }
-            }
-        }
-
         public static class Patterns {
             public static void Create(string path, List<UserModel> listOfUsers) {
                 if(!Directory.Exists($@"{path}\Users"))
                     Directory.CreateDirectory($@"{path}\Users");
-
                 Console.WriteLine($"[{DateTime.Now}] Creating dump with patterns");
-
                 listOfUsers.ForEach(x => {
                     var totalPatterns = x.Patterns.Count;
 
@@ -124,7 +96,7 @@ namespace Biometrics.Palm {
                     x = x.Remove (0, x.LastIndexOf ('\\') + 1).Replace (".jpg", "");
                     using (var fs = new FileStorage ($@"{path}\ROI\{x}.yaml", FileStorage.Mode.Read)) {
                         listOfPalms.Add (new PalmModel () {
-                            Id = fs["Id"].ReadString (),
+                                Id = fs["Id"].ReadString (),
                                 Owner = fs["Owner"].ReadString (),
                                 FileName = fs["FileName"].ReadString (),
                                 Directory = fs["Directory"].ReadString (),

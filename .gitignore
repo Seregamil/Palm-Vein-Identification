@@ -1,5 +1,5 @@
 bin/
 obj/
-images/
+Model/
 .vscode/
-!small-db/output/bin
+prepare_model.py
