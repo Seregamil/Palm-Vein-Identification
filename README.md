@@ -8,6 +8,8 @@ Sample structure of model u can see on this image
 
 Or open [model_structure_sample](/model_structure_sample/) folder
 
+Sample preprocessing u can see in [jupyter notebook](net-interactive/image-preprocess-sample.ipynb) (dotnet interactive)
+
 ## Image processing time
 
 Total users: **200**
