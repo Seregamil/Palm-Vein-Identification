@@ -6,7 +6,7 @@ Used *CASIA Multi-Spectral Palmprint Database*: http://biometrics.idealtest.org/
 Sample structure of model u can see on this image  
 ![structure](images/model_structure.jpg)
 
-Or open 'model_structure_sample' folder
+Or open [model_structure_sample](/model_structure_sample/) folder
 
 ## Image processing time
 
