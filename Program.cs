@@ -1,53 +1,45 @@
-using System.Text;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 using MoreLinq;
-
 using OpenCvSharp;
 
-using CsvHelper;
+namespace Biometrics.Palm
+{
+    public class Program
+    {
+        // public static List<UserModel> UsersList = new List<UserModel>();
+        public static List<PalmModel> PalmsList = new List<PalmModel>();
 
-namespace Biometrics.Palm {
-    public class Program {
-        public static List<UserModel> UsersList = new List<UserModel> ();
-        public static List<PalmModel> PalmsList = new List<PalmModel> ();
-
-        static void Main (string[] args) {
-            if(!Directory.Exists(Settings.Images.Output))
+        static void Main(string[] args)
+        {
+            if (!Directory.Exists(Settings.Images.Output))
                 Directory.CreateDirectory(Settings.Images.Output);
-            
-            if(!Directory.Exists(Settings.Images.Dump))
-                Directory.CreateDirectory(Settings.Images.Dump);
 
-            var listOfImages = Directory.GetFiles (Settings.Images.Source, "*.jpg").ToList ();
+            var listOfImages = Directory.GetFiles(Settings.Images.Source, "*.jpg")
+                                                    .Where(x => x.Contains("940"))
+                                                    .ToList();
 
-            //!Uncomment next line for select images by freq
-            listOfImages = listOfImages.Where(x => x.Contains("940")).ToList();
-
-            //! Comment from this to dump loading for dump load, lol
             //? get list of all filenames without .jpg and generate cntr PalmsList
-            listOfImages.ForEach (x => {
-                x = x.Remove (0, x.LastIndexOf ('\\') + 1).Replace (".jpg", "");
-                
+            listOfImages.ForEach(x =>
+            {
+                x = x.Remove(0, x.LastIndexOf('\\') + 1).Replace(".jpg", "");
+
                 var owner = x.Substring(0, x.IndexOf('_'));
                 var id = x.Substring(x.LastIndexOf('_') + 1);
                 var type = (x.IndexOf('r') == -1 ? 'l' : 'r');
                 var directory = $@"{Settings.Images.Output}{type}\{owner}";
 
-                PalmsList.Add (new PalmModel () {
+                PalmsList.Add(new PalmModel()
+                {
                     Id = id,
                     Owner = owner,
                     FileName = x,
-                    Type = type,
                     Directory = directory
                 });
-
 
                 if (Directory.Exists(directory) && Directory.GetFiles(directory).Length > 0)
                     Directory.Delete(directory, true); // recursive
@@ -57,194 +49,115 @@ namespace Biometrics.Palm {
 
             //? get names and create name collection
             //? create dirs for saving data
-            var userNames = PalmsList.DistinctBy (x => x.Owner);
-            userNames.ForEach (x => {
+            var userNames = PalmsList.DistinctBy(x => x.Owner);
 
-                UsersList.Add (new UserModel () {
-                    Name = x.Owner,
-                    Patterns = new List<Mat> (),
-                    Directory = x.Directory
-                });
-            });
+            Console.WriteLine($"Total users: {userNames.Count()}");
+            Console.WriteLine($"Total palm collection: {PalmsList.Count}");
 
-            Console.WriteLine ($"Total users: {UsersList.Count}");
-            Console.WriteLine ($"Total palm collection: {PalmsList.Count}");
+            double radius, a, xx, yy;
+            Point centerOfPalm;
 
-            var totalROIExtractionTime = new Stopwatch ();
-            totalROIExtractionTime.Start ();
+            Mat skel, temp, eroded, thr = new Mat();
+            Mat element = Cv2.GetStructuringElement(MorphShapes.Cross, Settings.ElementSize);
 
             //! ROI extraction
-            Console.WriteLine ($"[{DateTime.Now}] ROI extraction");
-            var ROITask = Task.Factory.StartNew (() => {
-                PalmsList.ForEach (x => {
-                    Task.Factory.StartNew (() => {
-                        var path = $@"{Settings.Images.Source}\{x.FileName}.jpg";
-                        x.SourceImage = Cv2.ImRead (path, ImreadModes.Color);
+            Console.WriteLine($"[{DateTime.Now}] Transform started");
 
-                        x.Height = x.SourceImage.Size().Height;
-                        x.Width = x.SourceImage.Size().Width;
+            var workerTime = new Stopwatch();
+            workerTime.Start();
 
-                        //! apply threshold
-                        Cv2.CvtColor (x.SourceImage, x.SourceImage, ColorConversionCodes.BGR2GRAY);
-                        
-                        x.ThresholdImage = x.SourceImage
-                                        .Threshold (5, 255, ThresholdTypes.Otsu);
+            PalmsList.ForEach(x =>
+            {
+                var path = $@"{Settings.Images.Source}\{x.FileName}.jpg";
+                x.SourceImage = Cv2.ImRead(path, ImreadModes.AnyColor);
+                x.ThresholdImage = x.SourceImage.Threshold(0, 255, ThresholdTypes.Otsu);
 
-                        //! ROI extraction
+                x.ThresholdImage.DistanceTransform(DistanceTypes.L2, DistanceMaskSize.Precise);
+                x.ThresholdImage.ConvertTo(x.ThresholdImage, MatType.CV_8U);
 
-                        var i1 = x.Height - 50;
-                        var i2 = x.Width - 50;
+                centerOfPalm = GetHandCenter(x.ThresholdImage, out radius);
 
-                        var radius = 50;
-                        int pX = 0;
-                        int pY = 0;
+                a = (2 * radius) / Math.Sqrt(2);
 
-                        for (int i = 50; i != i1; i++)
-                        {
-                            for (int j = 50; j != i2; j++)
-                            {
-                                if (x.ThresholdImage.Get<byte>(i, j) == Settings.COLOR_WHITE)
-                                {
-                                    int a = 0;
-                                    for (a = 1; a < 360; a++)
-                                    {
-                                        var y1 = Convert.ToInt16(j + radius * Math.Cos(a * Math.PI / 180));
-                                        var x1 = Convert.ToInt16(i - radius * Math.Sin(a * Math.PI / 180));
+                xx = centerOfPalm.X - radius * Math.Cos(45 * Math.PI / 180);
+                yy = centerOfPalm.Y - radius * Math.Sin(45 * Math.PI / 180);
 
-                                        if (x1 < 1 || x1 > i1 || y1 < 1 || y1 > i2 || x.ThresholdImage.Get<byte>(x1, y1) == Settings.COLOR_BLACK)
-                                            break;
-                                    }
+                var rect = new Rect(new Point(xx, yy), new Size(a, a));
+                x.ROI = new Mat(x.SourceImage, rect)
+                                    .Resize(new Size(150, 150));
 
-                                    if (a == 360)
-                                    {
-                                        radius += 10;
-                                        pX = i;
-                                        pY = j;
-                                    }
-                                }
-                            }
-                        }
+                Cv2.Rotate(x.ROI, x.ROI, RotateFlags.Rotate90Counterclockwise);
+                
+                //! apply filters
+                Cv2.MedianBlur(x.ROI, x.ROI, 5);
 
-                        radius -= 10;
+                // Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
+                Cv2.FastNlMeansDenoising(x.ROI, x.ROI);
+                Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.GRAY2BGR);
 
-                        var x0 = Convert.ToInt16(pY - Math.Sqrt(2) * radius / 2);
-                        var y0 = Convert.ToInt16(pX - Math.Sqrt(2) * radius / 2);
-                        var wsize = Convert.ToInt16(Math.Sqrt(2) * radius);
+                //! Equalize hist
+                Cv2.MorphologyEx(x.ROI, x.ROI, MorphTypes.Open, element);
+                Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2YUV);
 
-                        var rect = new Rect(x0, y0, wsize, wsize);
+                var RGB = Cv2.Split(x.ROI);
+                RGB[0] = RGB[0].EqualizeHist();
+                RGB[1] = RGB[1].EqualizeHist();
+                RGB[2] = RGB[2].EqualizeHist();
 
-                        // for visual debug
-                        Mat drawROIImage = new Mat();
-                        x.SourceImage.CopyTo(drawROIImage);
-                        drawROIImage.Rectangle(rect, Scalar.White);
+                Cv2.Merge(RGB, x.ROI);
+                Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.YUV2BGR);
 
-                        x.ROI = new Mat(x.SourceImage, rect)
-                            .Resize(new OpenCvSharp.Size(216, 216));
+                //! Invert image
+                Cv2.BitwiseNot(x.ROI, x.ROI);
 
-                        Cv2.Rotate(x.ROI, x.ROI, RotateFlags.Rotate90Counterclockwise);
-                    }, TaskCreationOptions.AttachedToParent | TaskCreationOptions.RunContinuationsAsynchronously);
-                });
+                //! Erode image
+                Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
+                Cv2.Erode(x.ROI, x.ROI, element);
+
+                //! Skeletonize
+                skel = new Mat(x.ROI.Size(), MatType.CV_8UC1, new Scalar(0));
+                temp = new Mat();
+                eroded = new Mat();
+
+                do
+                {
+                    Cv2.MorphologyEx(x.ROI, eroded, MorphTypes.Erode, element);
+                    Cv2.MorphologyEx(eroded, temp, MorphTypes.Dilate, element);
+                    Cv2.Subtract(x.ROI, temp, temp);
+                    Cv2.BitwiseOr(skel, temp, skel);
+                    eroded.CopyTo(x.ROI);
+
+                } while (Cv2.CountNonZero(x.ROI) != 0);
+
+                //! Threshold skeletonized image
+                thr = skel.Threshold(0, 255, ThresholdTypes.Binary);
+
+                /*//! Remove contours 
+                thr.Line(new Point(0, 0), new Point(0, thr.Height), Scalar.Black, 2); // rm left contour
+                thr.Line(new Point(0, 0), new Point(thr.Width, 0), Scalar.Black, 2); // rm top contour
+
+                thr.Line(new Point(thr.Width, thr.Height), new Point(thr.Width, 0), Scalar.Black, 2); // rm right contour
+                thr.Line(new Point(thr.Width, thr.Height), new Point(0, thr.Height), Scalar.Black, 2); // rm bot contour*/
+
+                Cv2.ImWrite($@"{x.Directory}\{x.Id}.jpg", thr);
             });
 
-            ROITask.Wait ();
-            totalROIExtractionTime.Stop ();
-            Console.WriteLine ($"[{DateTime.Now}] Total ROI extracton time: {totalROIExtractionTime.Elapsed}");
+            workerTime.Stop();
+            Console.WriteLine($"[{DateTime.Now}] Elapsed time: {workerTime.Elapsed}");
+        }
 
-            //! Create dump
-            Dump.ROI.Create (Settings.Images.Dump, PalmsList);
+        private static OpenCvSharp.Point GetHandCenter(Mat mask, out double radius)
+        {
+            /*http://blog.naver.com/pckbj123/100203325426*/
+            Mat dst = new Mat();
+            double radius1;
+            Cv2.DistanceTransform(mask, dst, DistanceTypes.L2, DistanceMaskSize.Mask5);
 
-            //! Uncomment next block for loading images from dump and comment all lines before this
-            // PalmsList = Dump.ROI.Load(Settings.Images.Dump, listOfImages);
-            // var countFrom = 0;
-            // var countTo = PalmsList.Count;
-            // ------------------------------
-
-            //! Apply filters
-
-            Console.WriteLine ($"[{DateTime.Now}] Apply filters to ROI image");
-            totalROIExtractionTime.Reset ();
-            totalROIExtractionTime.Start ();
-
-            var filtersTask = Task.Factory.StartNew (() => {
-                PalmsList.ForEach (x => {
-                    Task.Factory.StartNew (() => {
-
-                        //! Reduce noise
-                        Cv2.MedianBlur(x.ROI, x.ROI, 5);
-
-                        // Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
-                        Cv2.FastNlMeansDenoising(x.ROI, x.ROI);
-                        Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.GRAY2BGR);
-
-                        //! Equalize hist
-                        var element = Cv2.GetStructuringElement(MorphShapes.Cross, Settings.ElementSize); // new Mat(7, 7, MatType.CV_8U);
-                        Cv2.MorphologyEx(x.ROI, x.ROI, MorphTypes.Open, element);
-                        Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2YUV);
-
-                        // Cv2.EqualizeHist(x.ROI, x.ROI);
-                        var RGB = Cv2.Split(x.ROI);
-
-                        RGB[0] = RGB[0].EqualizeHist();
-                        RGB[1] = RGB[1].EqualizeHist();
-                        RGB[2] = RGB[2].EqualizeHist();
-
-                        Cv2.Merge(RGB, x.ROI);
-                        Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.YUV2BGR);
-
-                        //! Invert image
-                        Cv2.BitwiseNot(x.ROI, x.ROI);
-
-                        //! Erode image
-                        Cv2.CvtColor(x.ROI, x.ROI, ColorConversionCodes.BGR2GRAY);
-                        Cv2.Erode(x.ROI, x.ROI, element);
-
-                        //! Skeletonize
-                        var skel = new Mat(x.ROI.Size(), MatType.CV_8UC1, new Scalar(0));
-                        var temp = new Mat();
-                        var eroded = new Mat();
-
-                        do
-                        {
-                            Cv2.MorphologyEx(x.ROI, eroded, MorphTypes.Erode, element);
-                            Cv2.MorphologyEx(eroded, temp, MorphTypes.Dilate, element);
-                            Cv2.Subtract(x.ROI, temp, temp);
-                            Cv2.BitwiseOr(skel, temp, skel);
-                            eroded.CopyTo(x.ROI);
-
-                        } while (Cv2.CountNonZero(x.ROI) != 0);
-
-                        //! Threshold skeletonized image
-                        var thr = skel.Threshold(0, 255, ThresholdTypes.Binary);
-
-                        //! Remove contours 
-                        thr.Line(new Point(0, 0), new Point(0, thr.Height), Scalar.Black, 2); // rm left contour
-                        thr.Line(new Point(0, 0), new Point(thr.Width, 0), Scalar.Black, 2); // rm top contour
-
-                        thr.Line(new Point(thr.Width, thr.Height), new Point(thr.Width, 0), Scalar.Black, 2); // rm right contour
-                        thr.Line(new Point(thr.Width, thr.Height), new Point(0, thr.Height), Scalar.Black, 2); // rm bot contour
-
-                        //! Normalize contours
-                        /*element = Cv2.GetStructuringElement(MorphShapes.Ellipse, new Size(6, 6));
-
-                        Cv2.Dilate(thr, thr, element);
-                        Cv2.Erode(thr, thr, element);
-
-                        Cv2.MorphologyEx(thr, thr, MorphTypes.Gradient, element);*/
-
-                        Cv2.ImWrite ($@"{x.Directory}\{x.Id}.jpg", thr);
-
-                        var owner = UsersList.Find (u => u.Name == x.Owner);
-                        owner.Patterns.Add (thr); // add thresholded image to user patterns
-                    }, TaskCreationOptions.AttachedToParent | TaskCreationOptions.RunContinuationsAsynchronously);
-                });
-            });
-
-            filtersTask.Wait ();
-            totalROIExtractionTime.Stop ();
-            Console.WriteLine ($"[{DateTime.Now}] Total apply filters time: {totalROIExtractionTime.Elapsed}");
-
-            //! Create dump with users and they patterns
-            Dump.Patterns.Create(Settings.Images.Dump, UsersList);
-        }   
+            int[] maxIdx = new int[2];
+            int[] minIdx = new int[2];
+            Cv2.MinMaxIdx(dst, out radius1, out radius, minIdx, maxIdx, mask);
+            OpenCvSharp.Point output = new OpenCvSharp.Point(maxIdx[1], maxIdx[0]);
+            return output;
+        }
     }
 }

@@ -14,18 +14,11 @@ Sample preprocessing u can see in [jupyter notebook](net-interactive/image-prepr
 
 Total users: **200**
 Total palm collection: **1200**
+Elapsed time: **00:02:24.5661141**  
 
-*[30.03.2020 14:41:36]* ROI extraction  
-*[30.03.2020 15:02:05]* Total ROI extracton time: **00:20:29.0983916**
-
-*[30.03.2020 15:02:05]* Creating dump file with ROI images.  
-*[30.03.2020 15:04:11]* Dump created! images\output\bin\
-
-*[30.03.2020 15:04:11]* Apply filters to ROI image  
-*[30.03.2020 15:05:12]* Total apply filters time: **00:01:01.1780072**
-
-*[30.03.2020 15:05:12]* Creating dump with patterns  
-*[30.03.2020 15:05:21]* Dump with patterns created! images\output\bin\
+Total users: **100**  
+Total palm collection: **7200**  
+Elapsed time: **00:14:17.8218831**  
 
 ## Packages
 	
