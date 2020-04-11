@@ -8,11 +8,13 @@ Sample structure of model u can see on this image
 
 Or open [model_structure_sample](/model_structure_sample/) folder
 
-Sample preprocessing u can see in [jupyter notebook](net-interactive/image-preprocess-sample.ipynb) (dotnet interactive)
+Sample preprocessing u can see in [jupyter notebook](net-interactive/image-preprocess-sample.ipynb) (.net interactive)  
+This method very slowly, ~3h for 7200images  
+New ROI extracting method u can see in this [jupyter notebook](net-interactive/roi-new-method.ipynb) (.net interactive), ~2min for 7200images
 
 ## Image processing time
 
-Total users: **200**
+Total users: **100**
 Total palm collection: **1200**
 Elapsed time: **00:02:24.5661141**  
 
