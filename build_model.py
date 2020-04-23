@@ -1,62 +1,99 @@
-# Building a CNN for image classification:
-# https://becominghuman.ai/building-an-image-classifier-using-deep-learning-in-python-totally-from-a-beginners-perspective-be8dbaf22dd8
+from __future__ import print_function
+import sys, os, json, math
+import numpy, scipy
+import numpy as np
 
-
-# Importing the Keras libraries and packages
 import keras
-from keras.models import Sequential
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
-from keras.layers import Flatten
-from keras.layers import Dense
+from keras import *
+import tensorflow as tf
+import keras.backend as K
+from keras.preprocessing  import utils
+from keras.preprocessing.image import *
+from keras_preprocessing import *
+from keras_tqdm import *
+from keras_applications import *
+from keras_contrib import *
+from keras.models import *
+from keras.datasets import *
+from keras.layers import *
+from keras.preprocessing import *
+from keras.optimizers import  *
+from keras.losses import  *
+from keras.metrics import  *
+from keras.callbacks import  *
+from keras.activations import  *
+from keras.regularizers import  *
+from keras.layers.advanced_activations import PReLU
 
-IMAGE_SIZE = 150
+print(keras.__version__)
+print(tf.__version__)
 
-# Initialising the CNN
+img_rows, img_cols, img_ch = 227, 227, 3
+batch_size = 32
+nepochs = 50
+dir_tr = 'Model/l/'
+dir_val = 'Model/l/'
+
+train_datagen = ImageDataGenerator(rescale=1./255)
+test_datagen = ImageDataGenerator(rescale=1./255)
+
+train_generator = train_datagen.flow_from_directory(
+    directory=dir_tr, target_size=(img_rows, img_cols))
+validation_generator = test_datagen.flow_from_directory(
+    directory=dir_tr, target_size=(img_rows, img_cols))
+
+input_img = Input(shape=(img_rows, img_cols, img_ch))
+
 classifier = Sequential()
 
-# Step 1 - Convolution
-classifier.add(Conv2D(32, (3, 3), input_shape = (IMAGE_SIZE, IMAGE_SIZE, 3), activation = 'relu'))
+# 1st Convolutional Layer
+classifier.add(Conv2D(filters=96, input_shape=(img_rows, img_cols, img_ch),
+                      kernel_size=(11, 11), strides=(4, 4), padding="valid", activation="relu"))
 
-# Step 2 - Pooling
-classifier.add(MaxPooling2D(pool_size = (2, 2)))
+# Max Pooling
+classifier.add(MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"))
 
-# Adding a second convolutional layer
-classifier.add(Conv2D(32, (3, 3), activation = 'relu'))
-classifier.add(MaxPooling2D(pool_size = (2, 2)))
+# 2nd Convolutional Layer
+classifier.add(Conv2D(filters=256, kernel_size=(5, 5),
+                      strides=(1, 1), padding="same", activation="relu"))
 
-# Step 3 - Flattening
+# Max Pooling
+classifier.add(MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"))
+
+# 3rd Convolutional Layer
+classifier.add(Conv2D(filters=384, kernel_size=(3, 3),
+                      strides=(1, 1), padding="same", activation="relu"))
+
+# 4th Convolutional Layer
+classifier.add(Conv2D(filters=384, kernel_size=(3, 3),
+                      strides=(1, 1), padding="same", activation="relu"))
+
+# 5th Convolutional Layer
+classifier.add(Conv2D(filters=256, kernel_size=(3, 3),
+                      strides=(1, 1), padding="same", activation="relu"))
+
+# Max Pooling
+classifier.add(MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"))
+
+# Passing it to a Fully Connected layer
 classifier.add(Flatten())
+# 1st Fully Connected Layer
+classifier.add(Dense(units=4096, activation="relu"))
 
-# Step 4 - Full connection
-classifier.add(Dense(units = 128, activation = 'relu'))
-classifier.add(Dense(units = 1, activation = 'sigmoid'))
+# 2nd Fully Connected Layer
+classifier.add(Dense(4096, activation="relu"))
 
-# Compiling the CNN
-classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+# Output Layer
+classifier.add(Dense(100, activation="softmax"))  # As we have two classes
+classifier.summary()
 
-# Part 2 - Fitting the CNN to the images
-from keras.preprocessing.image import ImageDataGenerator
+opt = Adam(lr=0.0008)
+classifier.compile(
+    optimizer=opt, loss=keras.losses.categorical_crossentropy, metrics=['accuracy'])
 
-train_datagen = ImageDataGenerator(rescale = 1./255,
-    shear_range = 0.2,
-    zoom_range = 0.2,
-    horizontal_flip = True)
-
-test_datagen = ImageDataGenerator(rescale = 1./255)
-
-training_set = train_datagen.flow_from_directory('Model/l/',
-    target_size = (IMAGE_SIZE, IMAGE_SIZE),
-    batch_size = 32,
-    class_mode = 'binary')
-
-test_set = test_datagen.flow_from_directory('Model/l/',
-    target_size = (IMAGE_SIZE, IMAGE_SIZE),
-    batch_size = 32,
-    class_mode = 'binary')
-
-classifier.fit_generator(training_set,
-    steps_per_epoch = 8032,
-    epochs = 25,
-    validation_data = test_set,
-    validation_steps = 8032)
+history = classifier.fit_generator(
+    train_generator,
+    steps_per_epoch=((train_generator.samples))//batch_size,
+    epochs=nepochs, verbose=1,
+    validation_data=validation_generator,
+    validation_steps=((validation_generator.samples)) // batch_size)

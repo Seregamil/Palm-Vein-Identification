@@ -3,3 +3,6 @@ obj/
 Model/
 .vscode/
 prepare_model.py
+build_model.py
+left-black-sigma-5.rar
+left-white-sigma-5.rar
