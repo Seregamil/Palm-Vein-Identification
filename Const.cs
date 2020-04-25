@@ -20,7 +20,7 @@ namespace Biometrics.Palm
         /// Angles for rotating images for creating dataset
         /// </summary>
         /// <value></value>
-        public static readonly int[] RotationAngles = {
+        /*public static readonly int[] RotationAngles = {
             0,
             5,
             10,
@@ -44,7 +44,7 @@ namespace Biometrics.Palm
             150,
             330
         };
-
+*/
         public static readonly Point Zero = new Point(0, 0);
         public static Size ResizeValue = new Size(RESIZE_VALUE, RESIZE_VALUE);
         public static Scalar ZeroScalar = new Scalar(0);

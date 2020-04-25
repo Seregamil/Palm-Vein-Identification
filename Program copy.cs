@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -15,11 +15,11 @@ namespace Biometrics.Palm {
             //! create list of images 
             var listOfImages = Directory.GetFiles (Settings.Images.Source, "*.jpg")
                 .Where (x => x.Contains ("940"))
-                .Take (6) // take one palm to test
+                .Take (6) // take 20 to test
                 .ToList ();
 
             //! variables for ROI
-            double radius, a, xx, yy, predictX, predictY, angle;
+            double radius, a, xx, yy, predictX, predictY;
 
             Point centerOfPalm;
             Point2f centerOfImage;
@@ -29,7 +29,7 @@ namespace Biometrics.Palm {
             PalmModel[] Palms = new PalmModel[listOfImages.Count];
 
             //! matherials
-            Mat sourceHandle, thresholdHandle, roiHandle, skel, rotatedSource, eroded, thr, matrix = new Mat ();
+            Mat sourceHandle, thresholdHandle, roiHandle, skel, temp, eroded, thr, matrix = new Mat ();
             Mat element = Cv2.GetStructuringElement (MorphShapes.Cross, Settings.ElementSize);
             Mat[] RGB;
 
@@ -57,9 +57,6 @@ namespace Biometrics.Palm {
                 if (Palms[i].Type == 'r')
                     continue;
 
-                if (i % 10 == 0)
-                    Console.WriteLine($"{i}.{listOfImages.Count}");
-
                 // Read sample image
                 sourceHandle = Cv2.ImRead (Palms[i].Path, ImreadModes.AnyColor);
 
@@ -67,17 +64,15 @@ namespace Biometrics.Palm {
                 centerOfImage = new Point2f (sourceHandle.Width / 2, sourceHandle.Height / 2);
 
                 // Start loop by rotations
-                for (int j = 0; j != 180; j++) {
-                    // change rotation angle
-                    angle = j * 2;
+                for (int j = 0; j != Const.RotationAngles.Length; j++) {
+                    temp = new Mat ();
 
-                    rotatedSource = new Mat ();
                     // get and apply image rotation matrix by angle
-                    matrix = Cv2.GetRotationMatrix2D (centerOfImage, angle, 1.0);
-                    Cv2.WarpAffine (sourceHandle, rotatedSource, matrix, new Size (sourceHandle.Width, sourceHandle.Height));
+                    matrix = Cv2.GetRotationMatrix2D (centerOfImage, Const.RotationAngles[j], 1.0);
+                    Cv2.WarpAffine (sourceHandle, temp, matrix, new Size (sourceHandle.Width, sourceHandle.Height));
 
                     // apply threshold
-                    thresholdHandle = rotatedSource.Threshold (0, 255, ThresholdTypes.Otsu);
+                    thresholdHandle = temp.Threshold (0, 255, ThresholdTypes.Otsu);
 
                     // apply transform distance and convert to cv_8u
                     thresholdHandle.DistanceTransform (DistanceTypes.L2, DistanceMaskSize.Precise);
@@ -105,24 +100,17 @@ namespace Biometrics.Palm {
                     predictX = xx + a;
                     predictY = yy + a;
 
-                    if (predictX > rotatedSource.Width) { // if more
-                        xx -= predictX - rotatedSource.Width; // (590 - 580) = 10 
+                    if (predictX > temp.Width) { // if more
+                        xx -= predictX - temp.Width; // (590 - 580) = 10 
                     }
 
-                    if (predictY > rotatedSource.Height) {
-                        yy -= predictY - rotatedSource.Height; // 800 - 640 = 160
+                    if (predictY > temp.Height) {
+                        yy -= predictY - temp.Height; // 800 - 640 = 160
                     }
-
-                    /*
-                        rect = new Rect(new Point(xx + 20, yy + 20), new Size(a, a));
-                        rect = new Rect(new Point(xx - 20, yy - 20), new Size(a, a));
-                        rect = new Rect(new Point(xx - 20, yy + 20), new Size(a, a));
-                        rect = new Rect(new Point(xx + 20, yy - 20), new Size(a, a)); 
-                    */
 
                     rect = new Rect (new Point (xx, yy), new Size (a, a));
-                    
-                    roiHandle = new Mat (rotatedSource, rect)
+
+                    roiHandle = new Mat (temp, rect)
                         .Resize (Const.ResizeValue);
 
                     //! apply filters
@@ -153,15 +141,15 @@ namespace Biometrics.Palm {
 
                     //! Skeletonize
                     skel = new Mat (roiHandle.Size (), MatType.CV_8UC1, Const.ZeroScalar);
-                    rotatedSource = new Mat ();
+                    temp = new Mat ();
                     eroded = new Mat ();
                     thr = new Mat ();
 
                     do {
                         Cv2.MorphologyEx (roiHandle, eroded, MorphTypes.Erode, element);
-                        Cv2.MorphologyEx (eroded, rotatedSource, MorphTypes.Dilate, element);
-                        Cv2.Subtract (roiHandle, rotatedSource, rotatedSource);
-                        Cv2.BitwiseOr (skel, rotatedSource, skel);
+                        Cv2.MorphologyEx (eroded, temp, MorphTypes.Dilate, element);
+                        Cv2.Subtract (roiHandle, temp, temp);
+                        Cv2.BitwiseOr (skel, temp, skel);
                         eroded.CopyTo (roiHandle);
 
                     } while (Cv2.CountNonZero (roiHandle) != 0);
@@ -181,15 +169,17 @@ namespace Biometrics.Palm {
                         Cv2.MorphologyEx (thr, thr, MorphTypes.Gradient, element);
                         Cv2.BitwiseNot (thr, thr);
                     }
-                    thr.ImWrite ($"{Palms[i].Directory}/{Palms[i].Id}-{angle}.jpg");
+                    thr.ImWrite ($"{Palms[i].Directory}/{Palms[i].Id}-{j}.jpg");
                 }
+
+                if (i % 10 == 0)
+                    Console.WriteLine ($"{i}.{listOfImages.Count}");
             }
             workerTime.Stop ();
             Console.WriteLine ($"[{DateTime.Now}] Elapsed time: {workerTime.Elapsed}");
         }
 
         private static OpenCvSharp.Point GetHandCenter (Mat mask, out double radius) {
-            /*http://blog.naver.com/pckbj123/100203325426*/
             Mat dst = new Mat ();
             double radius1;
             Cv2.DistanceTransform (mask, dst, DistanceTypes.L2, DistanceMaskSize.Mask5);
@@ -201,4 +191,4 @@ namespace Biometrics.Palm {
             return output;
         }
     }
-}
+}*/
