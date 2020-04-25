@@ -3,40 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
-using MoreLinq;
 using OpenCvSharp;
-
-/*
-Rotation angles: 0, 10, 20, 30, 40, 50, 60, 120, 130, 140, 150, 330
-    Elapsed preprocess time: 00:47:47.2919918
-    72 img per hand, 144 per human
-    
-    Total images: 14400
-    Model accuracy: 51.70%
-    
-    Training time: ~7hours
-*/
-
-/*
-Rotation angles: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 120, 125, 130, 135, 140, 145, 150, 330
-    126 img per hand, 252 per human
-    Elapsed time: 01:10:04.2230528
-    Total images: 25200
-
-    Gausian sigmaX: 5
-        Black:
-            Model accuracy: 64,21%
-            Training time: 40429,4s -> 11 hours 21 min
-
-    Gausian sigmaX: 1
-        Model accuracy: ????
-        Training time: ~????
-
-    Gausian sigmaX: 0
-        Model accuracy: ????
-        Training time: ~????
-*/
 
 namespace Biometrics.Palm {
     public class Program {
@@ -48,7 +15,7 @@ namespace Biometrics.Palm {
             //! create list of images 
             var listOfImages = Directory.GetFiles (Settings.Images.Source, "*.jpg")
                 .Where (x => x.Contains ("940"))
-                .Take (3) // take 20 to test
+                .Take (6) // take 20 to test
                 .ToList ();
 
             //! variables for ROI
