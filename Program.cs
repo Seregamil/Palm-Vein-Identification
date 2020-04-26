@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+
 using OpenCvSharp;
 
 namespace Biometrics.Palm {
@@ -15,7 +15,8 @@ namespace Biometrics.Palm {
             //! create list of images 
             var listOfImages = Directory.GetFiles (Settings.Images.Source, "*.jpg")
                 .Where (x => x.Contains ("940"))
-                .Take (6) // take one palm to test
+                .Where (x => x.Contains("_l_"))
+                // .Take (6) // take one palm to test
                 .ToList ();
 
             //! variables for ROI
@@ -54,9 +55,6 @@ namespace Biometrics.Palm {
             workerTime.Start ();
 
             for (int i = 0; i != listOfImages.Count; i++) {
-                if (Palms[i].Type == 'r')
-                    continue;
-
                 if (i % 10 == 0)
                     Console.WriteLine($"{i}.{listOfImages.Count}");
 

@@ -10,15 +10,18 @@ Due to the fact that the data set is rather poor for training, an attempt was ma
 To do this, the original image is rotated by a certain angle and the ROI is extracted, expanding the data set.
 
 Source dataset: **6** images on one palm on one frequency.  
-Dataset now: **126** images on one palm on one frequency. 
+Dataset now: **1080** images on one palm on one frequency. 
 
-Image rotation angles: **0, 10, 20, 30, 40, 50, 60, 120, 130, 140, 150, 330**  
-Image processing time (1 hand - 940nm): **01:10:04.2230528**   
+Image rotation angles: **0, 2, 4, ... 358**  
+Image processing time (1 hand - 940nm): **04:51:25.1516273**   
 
-The total number of output images: **12600**
+The total number of output images: **108000**
 
-Model accuracy: **64,20%**  
-Elapsed training time: **11h 20m**
+Model accuracy for **108000** images: **??.??%**  
+Elapsed training time for **108000** images: **??d ??h ??m**
+
+Model accuracy for **12600** images: **64,20%**  
+Elapsed training time for **12600** images: **11h 20m**
 
 ## Packages
 	
