@@ -77,12 +77,20 @@ namespace Biometrics.Palm {
                     // apply threshold
                     thresholdHandle = rotatedSource.Threshold (0, 255, ThresholdTypes.Otsu);
 
-                    // apply transform distance and convert to cv_8u
+                    /*// apply transform distance and convert to cv_8u
                     thresholdHandle.DistanceTransform (DistanceTypes.L2, DistanceMaskSize.Precise);
                     thresholdHandle.ConvertTo (thresholdHandle, MatType.CV_8U);
 
                     // get center of palm
-                    centerOfPalm = GetHandCenter (thresholdHandle, out radius);
+                    centerOfPalm = GetHandCenter (thresholdHandle, out radius);*/
+					double radius1;
+					Cv2.DistanceTransform(thresholdHandle, matrix, DistanceTypes.L2, DistanceMaskSize.Mask5);
+					matrix.ImWrite($"{Palms[i].Directory}/002_distance-transform.jpg");
+
+					int[] maxIdx = new int[2];
+					int[] minIdx = new int[2];
+					Cv2.MinMaxIdx(matrix, out radius1, out radius, minIdx, maxIdx, thresholdHandle);
+					centerOfPalm = new OpenCvSharp.Point(maxIdx[1], maxIdx[0]);
 
                     // calculate ROI 
                     a = (2 * radius) / Math.Sqrt (2);
@@ -186,8 +194,8 @@ namespace Biometrics.Palm {
             Console.WriteLine ($"[{DateTime.Now}] Elapsed time: {workerTime.Elapsed}");
         }
 
-        private static OpenCvSharp.Point GetHandCenter (Mat mask, out double radius) {
-            /*http://blog.naver.com/pckbj123/100203325426*/
+        /*private static OpenCvSharp.Point GetHandCenter (Mat mask, out double radius) {
+            // http://blog.naver.com/pckbj123/100203325426
             Mat dst = new Mat ();
             double radius1;
             Cv2.DistanceTransform (mask, dst, DistanceTypes.L2, DistanceMaskSize.Mask5);
@@ -197,6 +205,6 @@ namespace Biometrics.Palm {
             Cv2.MinMaxIdx (dst, out radius1, out radius, minIdx, maxIdx, mask);
             OpenCvSharp.Point output = new OpenCvSharp.Point (maxIdx[1], maxIdx[0]);
             return output;
-        }
+        }*/
     }
 }
